@@ -78,7 +78,7 @@ services:
       CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
-      CONNECT_LOG4J_LOGGERS: "org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR,io.debezium.connector.postgresql=TRACE"
+      CONNECT_LOG4J_LOGGERS: "org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR"
       CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: "[%d] %p %X{connector.context}%m (%c:%L)%n"
       CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
       CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
@@ -86,7 +86,7 @@ services:
       CONNECT_PLUGIN_PATH: '/usr/share/java,/usr/share/confluent-hub-components'
     volumes:
       - ${PWD}/cacerts:/usr/lib/jvm/zulu11/lib/security/cacerts
-      - $PWD/scripts:/scripts
+      - $PWD/scripts/connect:/scripts
 
     command:
       - /bin/bash
@@ -95,7 +95,7 @@ services:
         echo "Installing Connector"
         confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.2.3
         confluent-hub install --no-prompt debezium/debezium-connector-postgresql:1.7.1
-
+        confluent-hub install --no-prompt mongodb/kafka-connect-mongodb:1.6.1
         #
         # Now launch Kafka Connect
         /etc/confluent/docker/run &
@@ -120,6 +120,8 @@ services:
   kafdrop:
     image: obsidiandynamics/kafdrop
     restart: "no"
+    hostname: kafdrop
+    container_name: kafdrop
     ports:
       - "9001:9000"
     environment:
@@ -141,7 +143,30 @@ services:
     command: "postgres -c 'config_file=/etc/postgresql/postgresql.conf'"
     volumes:
       - ${PWD}/postgresql.conf:/etc/postgresql/postgresql.conf
-      # - ${PWD}/pg_hba.conf:/etc/postgresql/pg_hba.conf
-      # - /home/vagrant/postgresql/data:/var/lib/postgresql/data:Z
+      - ${PWD}/scripts/postgres:/docker-entrypoint-initdb.d/
+
+  mongo:
+    image: harborrepository.corp.seic.com/poc/mongo:4.0.20
+    hostname: mongo
+    container_name: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+
+  mongo-express:
+    image: mongo-express
+    hostname: mongo-express
+    container_name: mongo-express
+    restart: always
+    ports:
+      - 8017:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/
+
 volumes:
     mi2: {}

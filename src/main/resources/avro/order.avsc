@@ -4,7 +4,7 @@
      "name": "Order",
      "version": "1",
      "fields": [
-       { "name": "order_id", "type": "string", "doc": "Id of the order filed" },
+       { "name": "order_id", "type": ["null", "string"], "default": null, "doc": "Id of the order filed" },
        { "name": "customer_id", "type": "string", "doc": "Id of the customer" },
        { "name": "supplier_id", "type": "string", "doc": "Id of the supplier" },
        { "name": "first_name", "type": "string", "doc": "First Name of Customer" },
